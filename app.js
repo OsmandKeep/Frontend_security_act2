@@ -44,7 +44,7 @@ function displayResponse(status, statusText, data) {
     output.textContent = `Status: ${status} ${statusText}\n\n${formattedData}`;
 }
 
-// Consumo de GET protegido
+// Execute protected GET request
 btnGet.addEventListener("click", async () => {
     const url = getEndpointUrl();
     output.textContent = `Fetching GET ${url}...`;
@@ -73,11 +73,11 @@ btnGet.addEventListener("click", async () => {
             statusTag.textContent = "Connection Error";
             statusTag.className = "status-tag error";
         }
-        output.textContent = `Connection Error: ${error.message}\n\nMake sure the backend server is running and CORS is enabled.`;
+        output.textContent = `Connection Error: ${error.message}\n\nPlease ensure the backend server is running and CORS is enabled.`;
     }
 });
 
-// Consumo de POST protegido
+// Execute protected POST request
 btnPost.addEventListener("click", async () => {
     const url = getEndpointUrl();
     output.textContent = `Fetching POST ${url}...`;
@@ -107,6 +107,6 @@ btnPost.addEventListener("click", async () => {
             statusTag.textContent = "Connection Error";
             statusTag.className = "status-tag error";
         }
-        output.textContent = `Connection Error: ${error.message}\n\nMake sure the backend server is running and CORS is enabled.`;
+        output.textContent = `Connection Error: ${error.message}\n\nPlease ensure the backend server is running and CORS is enabled.`;
     }
 });
