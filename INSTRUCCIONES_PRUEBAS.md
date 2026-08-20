@@ -40,12 +40,12 @@ Abre una terminal en la carpeta de tu backend y arráncalo según la tecnología
 Tienes tres opciones sencillas para abrir la interfaz:
 
 * **Opción A (Recomendada y directa):**
-  Abre el explorador de archivos, entra a `security-frontend` y haz **doble clic en `index.html`**.
+  Abre el explorador de archivos, entra a `Frontend` y haz **doble clic en `index.html`**.
 * **Opción B (Con VS Code Live Server):**
   Haz clic derecho sobre `index.html` dentro de VS Code y selecciona **"Open with Live Server"**.
 * **Opción C (Servidor local por consola):**
   ```powershell
-  cd "c:\Users\Osman\OneDrive\Escritorio\Frontend\security-frontend"
+  cd "c:\Users\Osman\OneDrive\Escritorio\Frontend"
   python -m http.server 3000
   ```
   Luego abre `http://localhost:3000` en tu navegador.

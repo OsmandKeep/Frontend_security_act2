@@ -9,11 +9,11 @@ This project communicates with a protected backend API using the `fetch()` API a
 ## 📁 Repository Structure
 
 ```text
-security-frontend/
 ├── index.html     # Webpage structure & user interface
 ├── styles.css     # Styling & layout
 ├── app.js         # API integration with fetch() & header handling
-└── README.md      # Documentation & testing guide
+├── README.md      # Documentation & testing guide
+└── INSTRUCCIONES_PRUEBAS.md # Step-by-step test execution guide
 ```
 
 ---
