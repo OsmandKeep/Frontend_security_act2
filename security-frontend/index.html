@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Security API Exercise - Frontend</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <main class="container">
+        <h1>Security API Exercise</h1>
+        
+        <div class="input-group">
+            <label for="api-url">Backend Base URL:</label>
+            <input type="text" id="api-url" value="http://localhost:8000" placeholder="http://localhost:8000">
+        </div>
+
+        <div class="input-group">
+            <label for="api-key-input">API Key (Header <code>x-api-key</code>):</label>
+            <input type="text" id="api-key-input" placeholder="Enter API Key here..." value="my-secret-key">
+            <small class="hint">Modify or leave empty to test 401 Unauthorized errors.</small>
+        </div>
+
+        <div class="actions">
+            <button id="btn-get" class="btn">Get Protected Data</button>
+            <button id="btn-post" class="btn">Send POST Request</button>
+        </div>
+
+        <div class="response-box">
+            <div class="response-header">
+                <h2>Response:</h2>
+                <span id="status-tag" class="status-tag">Idle</span>
+            </div>
+            <pre id="response-output">Click a button above to execute a request...</pre>
+        </div>
+    </main>
+
+    <script src="app.js"></script>
+</body>
+</html>
