@@ -1,20 +1,20 @@
-# 📋 Execution Guide & Testing Steps
+# 📋 Execution Guide & Testing Steps (Nginx Reverse Proxy)
 
-This document provides complete instructions to run the project and verify all **7 required tests** for the Security API assignment.
+This document provides instructions to run and verify the containerized Frontend client with Nginx reverse proxy and server-side authentication.
 
 ---
 
 ## 🛠️ Prerequisites
 
-1. **Backend:** API server running on `http://localhost:8000` (or your configured port).
-2. **CORS:** The backend must allow Cross-Origin Resource Sharing (CORS) and the custom `x-api-key` header.
-3. **Web Browser:** Google Chrome, Microsoft Edge, Mozilla Firefox, or Safari.
+1. **Backend Server:** Running on `http://localhost:8000`.
+2. **Docker & Docker Compose:** Installed and running on your system.
+3. **Web Browser:** Any modern browser (Chrome, Edge, Firefox, Safari).
 
 ---
 
 ## 🚀 Step 1: Start the Backend Server
 
-Open a terminal inside your backend folder and launch the server according to your stack:
+Start your backend API server on port 8000:
 
 - **Python (FastAPI / Uvicorn):**
   ```powershell
@@ -27,119 +27,72 @@ Open a terminal inside your backend folder and launch the server according to yo
 - **Node.js (Express):**
   ```powershell
   npm start
-  # or
-  node index.js
   ```
 
-> 💡 **Note on CORS:** Ensure your backend middleware enables CORS for incoming browser requests and allows the `x-api-key` header.
+---
+
+## 🐳 Step 2: Start Frontend with Docker Compose
+
+Open a terminal in the `Frontend` directory and launch the Nginx container:
+
+```powershell
+docker compose up -d --build
+```
+
+This starts the Nginx reverse proxy on port `80`, mapping:
+- Upstream backend: `API_UPSTREAM=http://host.docker.internal:8000`
+- Server-side injected key: `API_KEY=my-secret-key`
 
 ---
 
-## 🌐 Step 2: Open the Frontend
+## 🌐 Step 3: Open the Frontend
 
-Choose one of these easy options:
-
-* **Option A (Recommended & Direct):**
-  Open File Explorer, go to the `Frontend` folder, and **double-click `index.html`**.
-* **Option B (VS Code Live Server):**
-  Right-click `index.html` inside VS Code and select **"Open with Live Server"**.
-* **Option C (Local CLI Server):**
-  ```powershell
-  cd "C:\Users\Osman\OneDrive\Escritorio\Frontend"
-  python -m http.server 3000
-  ```
-  Then open `http://localhost:3000` in your browser.
+Navigate to:
+```text
+http://localhost
+```
 
 ---
 
-## 🧪 Step 3: Step-by-Step Guide for the 7 Required Tests
+## 🧪 Step 4: Verification Steps
 
----
+### 🔹 Test 1 — Health Check (Direct Backend)
+* **Action:** Open `http://localhost:8000/health` (or `http://localhost/health` through proxy).
+* **Expected Result:** `200 OK`
 
-### 🔹 Test 1 — Health Check (Public Endpoint)
-* **Goal:** Verify that the health endpoint responds without requiring authentication.
-* **How to test:**
-  1. Open a new tab in your browser.
-  2. Navigate to: `http://localhost:8000/health` (or send a request via Postman / Thunder Client).
+### 🔹 Test 2 — Protected GET Request
+* **Action:** Click **"Get Protected Data (GET)"** in the UI.
 * **Expected Result:**
-  - HTTP Status: `200 OK`
-  - No `x-api-key` header required.
-
----
-
-### 🔹 Test 2 — GET without API Key
-* **Goal:** Confirm that the protected endpoint rejects GET requests without credentials.
-* **How to test in the UI:**
-  1. In the **API Key (Header `x-api-key`)** input field, clear all text so it is **completely empty**.
-  2. Click the **`[ Get Protected Data ]`** button.
-* **Expected Result on Screen:**
-  - Status Tag: `401 Unauthorized` (red badge).
-  - Error response message from the backend denying access.
-
----
-
-### 🔹 Test 3 — GET with Incorrect API Key
-* **Goal:** Confirm that the protected endpoint rejects unauthorized keys.
-* **How to test in the UI:**
-  1. In the **API Key (Header `x-api-key`)** input field, enter: `wrong-key` (or any invalid string).
-  2. Click the **`[ Get Protected Data ]`** button.
-* **Expected Result on Screen:**
-  - Status Tag: `401 Unauthorized` (red badge).
-  - Backend response indicating invalid API key.
-
----
-
-### 🔹 Test 4 — GET with Correct API Key
-* **Goal:** Successfully retrieve protected data when supplying the correct key.
-* **How to test in the UI:**
-  1. In the **API Key (Header `x-api-key`)** input field, enter your valid secret key (e.g., `my-secret-key` as configured in your backend).
-  2. Click the **`[ Get Protected Data ]`** button.
-* **Expected Result on Screen:**
   - Status Tag: `200 OK` (green badge).
-  - Formatted JSON containing the protected data returned by the backend.
+  - Nginx injected `x-api-key: my-secret-key` server-side and fetched data from backend `/api/data`.
+  - Browser console / network shows request sent to relative URL `/api/data` without exposing any API key in headers.
 
----
-
-### 🔹 Test 5 — POST without API Key
-* **Goal:** Confirm that protected POST requests require authentication.
-* **How to test in the UI:**
-  1. Clear the **API Key (Header `x-api-key`)** input field (leave it empty).
-  2. Click the **`[ Send POST Request ]`** button.
-* **Expected Result on Screen:**
-  - Status Tag: `401 Unauthorized` (red badge).
-  - Access denied response.
-
----
-
-### 🔹 Test 6 — POST with Correct API Key
-* **Goal:** Successfully perform a POST request by supplying the authorized API key.
-* **How to test in the UI:**
-  1. Enter your valid secret key in the **API Key (Header `x-api-key`)** field.
-  2. Click the **`[ Send POST Request ]`** button.
-* **Expected Result on Screen:**
+### 🔹 Test 3 — Protected POST Request
+* **Action:** Click **"Send Protected Data (POST)"** in the UI.
+* **Expected Result:**
   - Status Tag: `200 OK` (green badge).
-  - JSON response:
-    ```json
-    {
-      "message": "POST received"
-    }
-    ```
+  - Response displays JSON payload returned by the backend.
+
+### 🔹 Test 4 — Environment Variable Override (Testing 401 Unauthorized)
+* **Action:** Run container with an invalid API key to test backend rejection:
+  ```powershell
+  docker compose down
+  $env:API_KEY="invalid-key"; docker compose up -d
+  ```
+* Click **"Get Protected Data (GET)"** on `http://localhost`.
+* **Expected Result:**
+  - Status Tag: `401 Unauthorized` (red badge).
+  - Demonstrates that server-side proxy correctly injects the configured key.
+* Reset back to default:
+  ```powershell
+  Remove-Item env:API_KEY -ErrorAction SilentlyContinue
+  docker compose up -d
+  ```
 
 ---
 
-### 🔹 Test 7 — Frontend Verification & Demonstration
-* **Goal:** Demonstrate interactive communication between the browser client and the backend API.
-* **Acceptance Criteria:**
-  1. The GET button calls the protected GET endpoint successfully.
-  2. The POST button calls the protected POST endpoint successfully.
-  3. All API responses (status codes and JSON payload) dynamically render inside the response area on the web page.
+## 🛑 Step 5: Stop the Container
 
----
-
-## 🔍 Troubleshooting Common Issues
-
-| Issue / Error | Potential Cause | Solution |
-|---|---|---|
-| `Connection Error: Failed to fetch` | The backend is not running or the port differs. | Check that your backend is running at `http://localhost:8000` or update the **Backend Base URL** input field on the page. |
-| `CORS Error` in browser console | Backend CORS middleware is missing or misconfigured. | Enable CORS in the backend allowing origin `*` and headers `["x-api-key", "Content-Type"]`. |
-| HTTP `404 Not Found` | Route mismatch. | Verify that the backend has registered the `/api/data` route. |
+```powershell
+docker compose down
+```

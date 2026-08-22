@@ -3,27 +3,32 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Security API Exercise - Frontend</title>
+    <title>Secure Frontend - Nginx Reverse Proxy</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <main class="container">
-        <h1>Security API Exercise</h1>
-        
-        <div class="input-group">
-            <label for="api-url">Backend Base URL:</label>
-            <input type="text" id="api-url" value="http://localhost:8000" placeholder="http://localhost:8000">
-        </div>
+        <header class="header">
+            <h1>Secure Frontend Gateway</h1>
+            <p class="subtitle">Nginx Reverse Proxy &amp; Server-Side Header Injection</p>
+        </header>
 
-        <div class="input-group">
-            <label for="api-key-input">API Key (Header <code>x-api-key</code>):</label>
-            <input type="text" id="api-key-input" placeholder="Enter API Key here..." value="my-secret-key">
-            <small class="hint">Modify or leave empty to test 401 Unauthorized errors.</small>
+        <div class="security-card">
+            <div class="security-header">
+                <span class="shield-icon">🛡️</span>
+                <h3>Cybersecurity Architecture</h3>
+            </div>
+            <ul class="security-details">
+                <li><strong>Client Exposure:</strong> <span class="badge-safe">Zero Keys in Browser</span></li>
+                <li><strong>Proxy Gateway:</strong> <code>Nginx (Port 80)</code></li>
+                <li><strong>Endpoint:</strong> <code>/api/data</code> (Relative path)</li>
+                <li><strong>Authentication:</strong> <code>x-api-key</code> injected server-side via Nginx</li>
+            </ul>
         </div>
 
         <div class="actions">
-            <button id="btn-get" class="btn">Get Protected Data</button>
-            <button id="btn-post" class="btn">Send POST Request</button>
+            <button id="btn-get" class="btn btn-primary">Get Protected Data (GET)</button>
+            <button id="btn-post" class="btn btn-secondary">Send Protected Data (POST)</button>
         </div>
 
         <div class="response-box">
@@ -31,7 +36,7 @@
                 <h2>Response:</h2>
                 <span id="status-tag" class="status-tag">Idle</span>
             </div>
-            <pre id="response-output">Click a button above to execute a request...</pre>
+            <pre id="response-output">Click a button above to execute a request through the Nginx reverse proxy...</pre>
         </div>
     </main>
 

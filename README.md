@@ -1,8 +1,8 @@
-# Security Frontend Repository
+# Secure Frontend Gateway (Nginx Reverse Proxy)
 
-Client-side web application for the **Security API Exercise** (Part 2).
+Secure containerized Frontend client for the **Security API Exercise**.
 
-This project communicates with a protected backend API using the browser's `fetch()` API and authentication via the `x-api-key` HTTP header.
+This architecture demonstrates the **Backend-For-Frontend / Reverse Proxy Gateway pattern** to protect API credentials. Sensitive keys (`x-api-key`) and upstream endpoints (`API_UPSTREAM`) are kept strictly on the server side in Nginx and never exposed to the client-side JavaScript or browser.
 
 ---
 
@@ -10,50 +10,69 @@ This project communicates with a protected backend API using the browser's `fetc
 
 ```text
 Frontend/
-├── index.html               # Webpage structure & user interface
-├── styles.css               # Clean, decoupled CSS styling
-├── app.js                   # API integration with fetch() & header handling
-├── README.md                # Project documentation & testing overview
-└── TESTING_INSTRUCTIONS.md  # Detailed step-by-step test execution guide
+├── Dockerfile                 # Container image definition using nginx:alpine
+├── docker-compose.yml         # Container orchestration with environment variables
+├── docker-entrypoint.sh       # Startup script injecting environment variables into Nginx
+├── nginx.conf.template        # Nginx configuration template with reverse proxy & header injection
+├── index.html                 # Frontend user interface (zero credentials)
+├── app.js                     # Client-side fetch logic (no client-side API keys)
+├── styles.css                 # Dark cybersecurity UI theme
+├── .env.example               # Template environment variable configuration
+├── .gitignore                 # Git ignore rules for .env and system artifacts
+├── README.md                  # Main project documentation
+└── TESTING_INSTRUCTIONS.md    # Detailed test execution guide
+```
+
+---
+
+## 🛡️ Security Architecture
+
+```
+[ Browser Client ]
+       │
+       │  1. GET/POST /api/data (No API key in client request)
+       ▼
+[ Nginx Reverse Proxy (Port 80) ]
+       │
+       │  2. Injects Header: `x-api-key: ${API_KEY}`
+       │  3. Forwards to: `${API_UPSTREAM}/api/data`
+       ▼
+[ Backend API (Port 8000) ]
 ```
 
 ---
 
 ## 🚀 How to Run
 
-1. Make sure your Backend API is running (e.g., on `http://localhost:8000`).
-2. Open [`index.html`](index.html) in any modern browser:
-   - Double-click `index.html`, or
-   - Use VS Code **Live Server** extension, or
-   - Run a simple local server:
-     ```bash
-     npx http-server . -p 3000
-     # or
-     python -m http.server 3000
-     ```
+### 1. Configure Environment (Optional)
+If you wish to customize variables, copy `.env.example` to `.env`:
+```bash
+cp .env.example .env
+```
+Default values:
+- `API_UPSTREAM=http://host.docker.internal:8000`
+- `API_KEY=my-secret-key`
+
+### 2. Start with Docker Compose
+```bash
+docker compose up -d --build
+```
+
+### 3. Open in Browser
+Open your browser and navigate to:
+```text
+http://localhost
+```
+
+### 4. Stop the Container
+```bash
+docker compose down
+```
 
 ---
 
-## ⚙️ Configuration & Features
+## 🧪 Testing Verification
 
-- **Backend Base URL**: Defaults to `http://localhost:8000`. Configurable directly via the UI input.
-- **API Key**: Configurable `x-api-key` header in the input box.
-- **Protected Endpoints**:
-  - `GET /api/data`: Sends `x-api-key` header to retrieve protected data.
-  - `POST /api/data`: Sends `x-api-key` header and JSON body to post protected data.
-- **Status & Feedback**: Real-time HTTP status badge and formatted JSON response viewer.
-
----
-
-## 🧪 Test Verification Matrix
-
-| Test # | Action | Input / Header | Expected Status | Expected Result |
-|---|---|---|---|---|
-| **Test 2** | Click **Get Protected Data** | No API Key (empty) | `401 Unauthorized` | Access denied error message |
-| **Test 3** | Click **Get Protected Data** | `x-api-key: wrong-key` | `401 Unauthorized` | Access denied error message |
-| **Test 4** | Click **Get Protected Data** | `x-api-key: <correct-key>` | `200 OK` | Protected JSON data returned |
-| **Test 5** | Click **Send POST Request** | No API Key (empty) | `401 Unauthorized` | Access denied error message |
-| **Test 6** | Click **Send POST Request** | `x-api-key: <correct-key>` | `200 OK` | `{"message": "POST received"}` |
-| **Test 7** | Open in Browser | UI Interaction | `200 OK` / `401` | Response displayed dynamically |
-
-For a complete walkthrough of all 7 tests, see [TESTING_INSTRUCTIONS.md](TESTING_INSTRUCTIONS.md).
+1. **GET Request (`GET /api/data`)**: Click **"Get Protected Data (GET)"** to test data retrieval through the secure reverse proxy.
+2. **POST Request (`POST /api/data`)**: Click **"Send Protected Data (POST)"** to test payload delivery through the secure reverse proxy.
+3. **Inspect Network Tab**: Notice that the browser never sends or receives `x-api-key`. All authentication is handled transparently by Nginx.

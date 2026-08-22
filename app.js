@@ -1,38 +1,46 @@
-const defaultEndpoint = "/api/data";
+// Relative API endpoint handled by Nginx reverse proxy
+const apiEndpoint = "/api/data";
 
 const output = document.getElementById("response-output");
 const statusTag = document.getElementById("status-tag");
-const apiUrlInput = document.getElementById("api-url");
-const apiKeyInput = document.getElementById("api-key-input");
 const btnGet = document.getElementById("btn-get");
 const btnPost = document.getElementById("btn-post");
 
-function getEndpointUrl() {
-    let base = apiUrlInput ? apiUrlInput.value.trim() : "http://localhost:8000";
-    if (!base) base = "http://localhost:8000";
-    // Remove trailing slash if present
-    base = base.replace(/\/+$/, "");
-    return `${base}${defaultEndpoint}`;
-}
-
+/**
+ * Builds HTTP headers for client requests.
+ * Note: x-api-key is NOT included here; it is injected server-side by the Nginx reverse proxy.
+ *
+ * @param {boolean} isJson - Whether the request payload is JSON.
+ * @returns {HeadersInit} - Request headers object.
+ */
 function getHeaders(isJson = false) {
     const headers = {};
-    const key = apiKeyInput.value.trim();
-    if (key) {
-        headers["x-api-key"] = key;
-    }
     if (isJson) {
         headers["Content-Type"] = "application/json";
     }
     return headers;
 }
 
+/**
+ * Updates UI status badge with response status.
+ *
+ * @param {number|string} status - HTTP status code or state label.
+ * @param {string} statusText - HTTP status description text.
+ * @param {boolean} isError - Flag indicating if status is an error.
+ */
 function updateStatus(status, statusText, isError = false) {
     if (!statusTag) return;
     statusTag.textContent = `${status} ${statusText}`;
     statusTag.className = "status-tag " + (isError ? "error" : "success");
 }
 
+/**
+ * Formats and displays API response in the output box.
+ *
+ * @param {number} status - HTTP status code.
+ * @param {string} statusText - Status description.
+ * @param {any} data - Response body content.
+ */
 function displayResponse(status, statusText, data) {
     const isSuccess = status >= 200 && status < 300;
     updateStatus(status, statusText, !isSuccess);
@@ -44,19 +52,18 @@ function displayResponse(status, statusText, data) {
     output.textContent = `Status: ${status} ${statusText}\n\n${formattedData}`;
 }
 
-// Execute protected GET request
+// Execute protected GET request via Nginx Reverse Proxy
 btnGet.addEventListener("click", async () => {
-    const url = getEndpointUrl();
-    output.textContent = `Fetching GET ${url}...`;
+    output.textContent = `Fetching GET ${apiEndpoint}...`;
     if (statusTag) {
         statusTag.textContent = "Loading...";
         statusTag.className = "status-tag";
     }
 
     try {
-        const response = await fetch(url, {
+        const response = await fetch(apiEndpoint, {
             method: "GET",
-            headers: getHeaders()
+            headers: getHeaders(false)
         });
 
         let data;
@@ -73,24 +80,23 @@ btnGet.addEventListener("click", async () => {
             statusTag.textContent = "Connection Error";
             statusTag.className = "status-tag error";
         }
-        output.textContent = `Connection Error: ${error.message}\n\nPlease ensure the backend server is running and CORS is enabled.`;
+        output.textContent = `Connection Error: ${error.message}\n\nPlease ensure Nginx container and backend upstream are running.`;
     }
 });
 
-// Execute protected POST request
+// Execute protected POST request via Nginx Reverse Proxy
 btnPost.addEventListener("click", async () => {
-    const url = getEndpointUrl();
-    output.textContent = `Fetching POST ${url}...`;
+    output.textContent = `Fetching POST ${apiEndpoint}...`;
     if (statusTag) {
         statusTag.textContent = "Loading...";
         statusTag.className = "status-tag";
     }
 
     try {
-        const response = await fetch(url, {
+        const response = await fetch(apiEndpoint, {
             method: "POST",
             headers: getHeaders(true),
-            body: JSON.stringify({ message: "Request from Frontend" })
+            body: JSON.stringify({ message: "Request sent via Nginx Reverse Proxy" })
         });
 
         let data;
@@ -107,6 +113,6 @@ btnPost.addEventListener("click", async () => {
             statusTag.textContent = "Connection Error";
             statusTag.className = "status-tag error";
         }
-        output.textContent = `Connection Error: ${error.message}\n\nPlease ensure the backend server is running and CORS is enabled.`;
+        output.textContent = `Connection Error: ${error.message}\n\nPlease ensure Nginx container and backend upstream are running.`;
     }
 });
