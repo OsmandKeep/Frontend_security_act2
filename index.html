@@ -3,123 +3,268 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Portal Seguro - Nginx, LDAP & Base de Datos Cifrada</title>
+    <title>SecureAuth Gateway &bull; OpenLDAP &amp; Nginx</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <main class="container">
-        <header class="header">
-            <div class="header-badge">Ciberseguridad &amp; Gestión de Identidad</div>
-            <h1>Portal Seguro Corporativo</h1>
-            <p class="subtitle">Nginx Reverse Proxy &bull; Autenticación OpenLDAP &bull; Rotación de Secrets</p>
-        </header>
+    <!-- Background Ambient Glow -->
+    <div class="bg-glow"></div>
 
-        <!-- Architecture status card -->
-        <div class="security-card">
-            <div class="security-header">
-                <span class="shield-icon">🛡️</span>
-                <h3>Arquitectura de Seguridad de 3 Servicios</h3>
+    <!-- Top Navigation Bar -->
+    <nav class="top-nav">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <div class="brand-icon">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                    </svg>
+                </div>
+                <div class="brand-text">
+                    <span class="brand-title">SecureAuth</span>
+                    <span class="brand-tag">GATEWAY</span>
+                </div>
             </div>
-            <ul class="security-details">
-                <li><strong>Frontend (Nginx :80):</strong> <span class="badge-safe">Cero credenciales expuestas al navegador</span></li>
-                <li><strong>Backend (FastAPI :8000):</strong> <code>x-api-key</code> inyectado del lado del servidor + Fernet DB</li>
-                <li><strong>Servicio LDAP (OpenLDAP :389):</strong> Autenticación centralizada <code>dc=example,dc=com</code></li>
-                <li><strong>Rotación de Secrets:</strong> Script externo rota secrets de Frontend, Backend y LDAP</li>
-            </ul>
+
+            <div class="nav-status">
+                <div class="status-chip" title="Proxy Nginx activo con inyección de secret en puerto 80">
+                    <span class="chip-dot dot-green"></span> Nginx Proxy
+                </div>
+                <div class="status-chip" title="Directorio OpenLDAP en puerto 389">
+                    <span class="chip-dot dot-blue"></span> OpenLDAP :389
+                </div>
+                <div class="status-chip" title="Cifrado Fernet persistente">
+                    <span class="chip-dot dot-purple"></span> BD Cifrada
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main class="main-wrapper">
+        <!-- Toast Notification -->
+        <div id="toast" class="toast hidden">
+            <div class="toast-icon" id="toast-icon"></div>
+            <div class="toast-content" id="toast-content"></div>
         </div>
 
-        <!-- 1. LDAP LOGIN SECTION -->
-        <div id="login-section" class="card login-card">
-            <div class="card-header">
-                <h2>🔐 Inicio de Sesión LDAP</h2>
-                <span class="status-tag info">OpenLDAP Directory</span>
+        <!-- ========================================================
+             1. LOGIN VIEW (Clean, modern authentication card)
+             ======================================================== -->
+        <section id="view-login" class="auth-card">
+            <div class="card-top">
+                <div class="auth-icon-wrap">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
+                    </svg>
+                </div>
+                <h1 class="card-title">Iniciar Sesión</h1>
+                <p class="card-subtitle">Autenticación corporativa mediante directorio OpenLDAP</p>
             </div>
-            <p class="card-desc">Ingresa tus credenciales corporativas almacenadas en el directorio OpenLDAP.</p>
-            
-            <form id="login-form">
-                <div class="form-group">
-                    <label for="username">Usuario LDAP (UID):</label>
-                    <input type="text" id="username" class="form-input" placeholder="Ej. alice o bob" value="alice" required autocomplete="username">
-                </div>
-                <div class="form-group">
-                    <label for="password">Contraseña LDAP:</label>
-                    <input type="password" id="password" class="form-input" placeholder="Contraseña de usuario LDAP" value="alice123" required autocomplete="current-password">
-                </div>
-                <div class="form-actions">
-                    <button type="submit" id="btn-login" class="btn btn-primary">
-                        <span class="btn-icon">🔑</span> Iniciar Sesión con LDAP
+
+            <!-- Quick Account Selector Pills -->
+            <div class="quick-accounts">
+                <span class="quick-label">Selección rápida de usuario:</span>
+                <div class="account-chips">
+                    <button type="button" class="account-chip active" id="chip-alice" data-user="alice" data-pass="alice123">
+                        <span class="chip-avatar">A</span>
+                        <div class="chip-info">
+                            <strong>Alice Smith</strong>
+                            <small>alice / alice123</small>
+                        </div>
                     </button>
-                    <button type="button" id="btn-quick-fill" class="btn btn-outline" title="Alternar entre alice y bob">
-                        👤 Cambiar a Bob (bob / bob123)
+                    <button type="button" class="account-chip" id="chip-bob" data-user="bob" data-pass="bob123">
+                        <span class="chip-avatar">B</span>
+                        <div class="chip-info">
+                            <strong>Bob Johnson</strong>
+                            <small>bob / bob123</small>
+                        </div>
                     </button>
                 </div>
+            </div>
+
+            <!-- Login Form -->
+            <form id="login-form" class="auth-form">
+                <div class="field-group">
+                    <label for="username">Usuario (UID LDAP)</label>
+                    <div class="input-wrap">
+                        <svg class="input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="12" cy="7" r="4"></circle>
+                        </svg>
+                        <input type="text" id="username" class="modern-input" placeholder="alice o bob" value="alice" required autocomplete="username">
+                    </div>
+                </div>
+
+                <div class="field-group">
+                    <div class="label-row">
+                        <label for="password">Contraseña</label>
+                        <span class="label-hint">Directorio LDAP</span>
+                    </div>
+                    <div class="input-wrap">
+                        <svg class="input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                        </svg>
+                        <input type="password" id="password" class="modern-input" placeholder="Contraseña de usuario" value="alice123" required autocomplete="current-password">
+                        <button type="button" id="btn-toggle-pwd" class="pwd-toggle" title="Mostrar/Ocultar contraseña">
+                            <svg id="eye-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <button type="submit" id="btn-login" class="btn-submit">
+                    <span id="btn-login-text">Entrar al Sistema</span>
+                    <svg class="btn-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                        <polyline points="12 5 19 12 12 19"></polyline>
+                    </svg>
+                </button>
             </form>
-            <div class="credentials-hint">
-                💡 <strong>Credenciales de prueba:</strong> <code>alice</code> / <code>alice123</code> &bull; <code>bob</code> / <code>bob123</code>
-            </div>
-        </div>
 
-        <!-- 2. AUTHENTICATED SESSION SECTION (Initially hidden) -->
-        <div id="session-section" class="card session-card hidden">
-            <div class="card-header">
-                <h2>👤 Sesión Activa (LDAP)</h2>
-                <span class="status-tag success">Autenticado</span>
+            <div class="security-footer">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                </svg>
+                <span>Conexión protegida por Nginx Reverse Proxy (x-api-key en servidor)</span>
             </div>
-            <div class="user-info-grid">
-                <div class="info-item">
-                    <span class="info-label">Nombre Completo:</span>
-                    <strong id="user-display-name" class="info-value">Alice Smith</strong>
+        </section>
+
+        <!-- ========================================================
+             2. DASHBOARD VIEW (Shown when authenticated)
+             ======================================================== -->
+        <section id="view-dashboard" class="dashboard-card hidden">
+            <!-- User Session Header -->
+            <div class="user-banner">
+                <div class="user-meta">
+                    <div class="user-avatar-large" id="dash-avatar">AS</div>
+                    <div class="user-titles">
+                        <h2 id="dash-fullname">Alice Smith</h2>
+                        <span class="user-role-badge">LDAP User &bull; <span id="dash-username">alice</span></span>
+                    </div>
                 </div>
-                <div class="info-item">
-                    <span class="info-label">Usuario (UID):</span>
-                    <strong id="user-display-username" class="info-value">alice</strong>
+                <button id="btn-logout" class="btn-logout" title="Cerrar sesión">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                        <polyline points="16 17 21 12 16 7"></polyline>
+                        <line x1="21" y1="12" x2="9" y2="12"></line>
+                    </svg>
+                    <span>Cerrar Sesión</span>
+                </button>
+            </div>
+
+            <!-- LDAP Info Strip -->
+            <div class="dn-box">
+                <span class="dn-label">Distinguished Name (DN):</span>
+                <code id="dash-dn">uid=alice,ou=users,dc=example,dc=com</code>
+            </div>
+
+            <!-- Action Grid -->
+            <div class="dashboard-grid">
+                <!-- Card: Database Operations -->
+                <div class="dash-module">
+                    <div class="module-header">
+                        <div class="module-icon">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <ellipse cx="12" cy="5" rx="9" ry="3"></ellipse>
+                                <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path>
+                                <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path>
+                            </svg>
+                        </div>
+                        <h3>Base de Datos Cifrada (Fernet)</h3>
+                    </div>
+                    <p class="module-desc">Los datos se almacenan cifrados con AES-Fernet 256 bits y se descifran en cada lectura.</p>
+
+                    <div class="field-group">
+                        <label for="post-message">Mensaje para cifrar y almacenar:</label>
+                        <input type="text" id="post-message" class="modern-input" value="Datos confidenciales verificados con LDAP" placeholder="Texto a cifrar...">
+                    </div>
+
+                    <div class="module-actions">
+                        <button id="btn-get" class="btn-action btn-primary">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="7 10 12 15 17 10"></polyline>
+                                <line x1="12" y1="15" x2="12" y2="3"></line>
+                            </svg>
+                            <span>Consultar y Descifrar (GET)</span>
+                        </button>
+                        <button id="btn-post" class="btn-action btn-secondary">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="17 8 12 3 7 8"></polyline>
+                                <line x1="12" y1="3" x2="12" y2="15"></line>
+                            </svg>
+                            <span>Cifrar y Guardar (POST)</span>
+                        </button>
+                    </div>
                 </div>
-                <div class="info-item full-width">
-                    <span class="info-label">Distinguished Name (DN):</span>
-                    <code id="user-display-dn" class="info-code">uid=alice,ou=users,dc=example,dc=com</code>
+
+                <!-- Card: Security Diagnostics -->
+                <div class="dash-module">
+                    <div class="module-header">
+                        <div class="module-icon">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                            </svg>
+                        </div>
+                        <h3>Rotación de Secrets &amp; Diagnóstico</h3>
+                    </div>
+                    <p class="module-desc">Comprueba la salud del backend y el secret activo inyectado por Nginx sin recargar la página.</p>
+
+                    <div class="security-specs">
+                        <div class="spec-row">
+                            <span>API Secret:</span>
+                            <span class="spec-value" id="spec-secret">Inyectado por Proxy</span>
+                        </div>
+                        <div class="spec-row">
+                            <span>Clave de Cifrado:</span>
+                            <span class="spec-value">Persistente (Fernet)</span>
+                        </div>
+                        <div class="spec-row">
+                            <span>Servidor LDAP:</span>
+                            <span class="spec-value">openldap:389</span>
+                        </div>
+                    </div>
+
+                    <div class="module-actions">
+                        <button id="btn-status" class="btn-action btn-outline full-width">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <line x1="12" y1="16" x2="12" y2="12"></line>
+                                <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                            </svg>
+                            <span>Comprobar Estado de Secrets (/api/status)</span>
+                        </button>
+                    </div>
                 </div>
             </div>
-            <div class="session-actions">
-                <button id="btn-logout" class="btn btn-danger">
-                    <span class="btn-icon">🚪</span> Cerrar Sesión
-                </button>
-            </div>
-        </div>
+        </section>
 
-        <!-- 3. PROTECTED DATA OPERATIONS SECTION -->
-        <div class="card operations-card">
-            <div class="card-header">
-                <h2>📦 Operaciones en Base de Datos Cifrada</h2>
-                <span class="status-tag">Protegido por x-api-key</span>
+        <!-- ========================================================
+             3. TERMINAL / CONSOLE OUTPUT
+             ======================================================== -->
+        <section class="console-card">
+            <div class="console-header">
+                <div class="console-dots">
+                    <span class="dot dot-red"></span>
+                    <span class="dot dot-yellow"></span>
+                    <span class="dot dot-green"></span>
+                </div>
+                <span class="console-title">Respuesta de la API (Nginx Reverse Proxy)</span>
+                <span id="status-tag" class="status-badge idle">Listo</span>
             </div>
-            <p class="card-desc">Todas las peticiones pasan a través del proxy reverso de Nginx con inyección del <code>API_SECRET</code> dinámico actual.</p>
-
-            <div class="form-group">
-                <label for="post-message">Mensaje confidencial a cifrar (POST):</label>
-                <input type="text" id="post-message" class="form-input" placeholder="Escribe un mensaje para cifrar con Fernet en SQLite..." value="Datos protegidos por cifrado simétrico y secret rotativo">
+            <div class="console-body">
+                <pre id="response-output">El portal está listo. Inicia sesión con LDAP o realiza consultas para observar el flujo de seguridad...</pre>
             </div>
-
-            <div class="actions">
-                <button id="btn-get" class="btn btn-primary">
-                    <span class="btn-icon">📥</span> Consultar y Descifrar (GET /api/data)
-                </button>
-                <button id="btn-post" class="btn btn-secondary">
-                    <span class="btn-icon">🔒</span> Cifrar y Guardar en BD (POST /api/data)
-                </button>
-                <button id="btn-status" class="btn btn-outline">
-                    <span class="btn-icon">🔍</span> Estado de Secrets (/api/status)
-                </button>
-            </div>
-        </div>
-
-        <!-- 4. LIVE CONSOLE / RESPONSE BOX -->
-        <div class="response-box">
-            <div class="response-header">
-                <h2>📡 Respuesta de la API (vía Nginx Reverse Proxy):</h2>
-                <span id="status-tag" class="status-tag">En espera</span>
-            </div>
-            <pre id="response-output">Inicia sesión con LDAP o pulsa cualquier botón de operación para interactuar a través del proxy reverso...</pre>
-        </div>
+        </section>
     </main>
 
     <script src="app.js"></script>
