@@ -107,12 +107,12 @@ function setAuthState(user) {
         const initials = parts.length > 1 ? (parts[0][0] + parts[1][0]).toUpperCase() : user.username.substring(0, 2).toUpperCase();
         dashAvatar.textContent = initials;
 
-        showToast(`Bienvenido(a), ${fullName}. Sesión iniciada con OpenLDAP.`, "success");
+        showToast(`Welcome, ${fullName}. Authenticated successfully with OpenLDAP.`, "success");
     } else {
         viewDashboard.classList.add("hidden");
         viewLogin.classList.remove("hidden");
         passwordInput.value = "";
-        showToast("Sesión finalizada.", "info");
+        showToast("Signed out successfully.", "info");
     }
 }
 
@@ -154,9 +154,9 @@ loginForm.addEventListener("submit", async (e) => {
     const password = passwordInput.value;
 
     btnLogin.disabled = true;
-    btnLoginText.textContent = "Verificando en OpenLDAP...";
-    setConsoleStatus("Autenticando...", "loading");
-    output.textContent = `// Enviando credenciales vía Nginx Reverse Proxy...\n// POST ${API_LOGIN}\n// Destino: Backend (x-api-key server-side) -> OpenLDAP (:389)`;
+    btnLoginText.textContent = "Verifying with OpenLDAP...";
+    setConsoleStatus("Authenticating...", "loading");
+    output.textContent = `// Submitting credentials via Nginx Reverse Proxy...\n// POST ${API_LOGIN}\n// Target: Backend (server-side x-api-key injection) -> OpenLDAP (:389)`;
 
     try {
         const res = await fetch(API_LOGIN, {
@@ -178,31 +178,31 @@ loginForm.addEventListener("submit", async (e) => {
         if (res.ok && data.authenticated) {
             setAuthState(data);
         } else {
-            showToast(data.detail || "Error: Credenciales LDAP inválidas.", "error");
+            showToast(data.detail || "Error: Invalid LDAP credentials.", "error");
         }
     } catch (err) {
         setConsoleStatus("Error", "error");
-        showToast(`Fallo de conexión: ${err.message}`, "error");
-        output.textContent = `// Error de conexión: ${err.message}\n// Verifica que Nginx y OpenLDAP estén en ejecución.`;
+        showToast(`Connection error: ${err.message}`, "error");
+        output.textContent = `// Connection error: ${err.message}\n// Ensure Nginx and OpenLDAP containers are running.`;
     } finally {
         btnLogin.disabled = false;
-        btnLoginText.textContent = "Entrar al Sistema";
+        btnLoginText.textContent = "Sign In to System";
     }
 });
 
 // Logout
 btnLogout.addEventListener("click", () => {
     setAuthState(null);
-    setConsoleStatus("Desconectado", "idle");
-    output.textContent = "// Sesión cerrada. Ingresa tus credenciales para autenticarte nuevamente con OpenLDAP.";
+    setConsoleStatus("Signed Out", "idle");
+    output.textContent = "// Session ended. Enter your credentials to authenticate again with OpenLDAP.";
 });
 
 // --------------------------------------------------------------------------
 // 2. Protected Data GET
 // --------------------------------------------------------------------------
 btnGet.addEventListener("click", async () => {
-    setConsoleStatus("Consultando...", "loading");
-    output.textContent = `// Solicitando GET ${API_DATA} vía Nginx...\n// Nginx inyecta x-api-key en la cabecera sin exponerla al navegador.`;
+    setConsoleStatus("Requesting...", "loading");
+    output.textContent = `// Requesting GET ${API_DATA} via Nginx...\n// Nginx injects rotated x-api-key header without exposing it to the browser.`;
 
     try {
         const res = await fetch(API_DATA);
@@ -216,11 +216,11 @@ btnGet.addEventListener("click", async () => {
 
         displayConsole(res.status, res.statusText || "OK", data);
         if (res.ok) {
-            showToast("Registro descifrado exitosamente de la base de datos.", "success");
+            showToast("Record successfully decrypted from database.", "success");
         }
     } catch (err) {
         displayConsole(500, "Error", err.message);
-        showToast("Error de conexión al obtener datos.", "error");
+        showToast("Connection error while fetching data.", "error");
     }
 });
 
@@ -228,9 +228,9 @@ btnGet.addEventListener("click", async () => {
 // 3. Protected Data POST (Encrypted write)
 // --------------------------------------------------------------------------
 btnPost.addEventListener("click", async () => {
-    const msg = postMessageInput.value.trim() || "Dato confidencial seguro";
-    setConsoleStatus("Cifrando...", "loading");
-    output.textContent = `// Enviando POST ${API_DATA} vía Nginx...\n// Backend cifrará el contenido con Fernet antes de guardarlo en SQLite.`;
+    const msg = postMessageInput.value.trim() || "Confidential secure record";
+    setConsoleStatus("Encrypting...", "loading");
+    output.textContent = `// Submitting POST ${API_DATA} via Nginx...\n// Backend encrypts payload with 256-bit Fernet before storing in SQLite.`;
 
     try {
         const res = await fetch(API_DATA, {
@@ -249,11 +249,11 @@ btnPost.addEventListener("click", async () => {
 
         displayConsole(res.status, res.statusText || "OK", data);
         if (res.ok) {
-            showToast("Mensaje cifrado y almacenado en SQLite con éxito.", "success");
+            showToast("Message encrypted and saved into SQLite successfully.", "success");
         }
     } catch (err) {
         displayConsole(500, "Error", err.message);
-        showToast("Error de conexión al guardar datos.", "error");
+        showToast("Connection error while storing data.", "error");
     }
 });
 
@@ -261,8 +261,8 @@ btnPost.addEventListener("click", async () => {
 // 4. Status Check
 // --------------------------------------------------------------------------
 btnStatus.addEventListener("click", async () => {
-    setConsoleStatus("Diagnóstico...", "loading");
-    output.textContent = `// Consultando GET ${API_STATUS}...\n// Verificando secret activo inyectado por Nginx y estado de LDAP.`;
+    setConsoleStatus("Diagnostics...", "loading");
+    output.textContent = `// Requesting GET ${API_STATUS}...\n// Inspecting active secret injected by Nginx and LDAP directory health.`;
 
     try {
         const res = await fetch(API_STATUS);
@@ -279,10 +279,10 @@ btnStatus.addEventListener("click", async () => {
 
         displayConsole(res.status, res.statusText || "OK", data);
         if (res.ok) {
-            showToast("Diagnóstico del sistema y secrets actualizado.", "info");
+            showToast("System diagnostics and secret status updated.", "info");
         }
     } catch (err) {
         displayConsole(500, "Error", err.message);
-        showToast("Error al consultar estado.", "error");
+        showToast("Error while checking status.", "error");
     }
 });
