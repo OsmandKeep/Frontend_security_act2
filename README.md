@@ -25,54 +25,56 @@ Frontend/
 
 ---
 
-## 🛡️ Security Architecture
+# Secure Frontend Gateway - Nginx Reverse Proxy & OpenLDAP Login
 
-```
-[ Browser Client ]
-       │
-       │  1. GET/POST /api/data (No API key in client request)
-       ▼
-[ Nginx Reverse Proxy (Port 80) ]
-       │
-       │  2. Injects Header: `x-api-key: ${API_KEY}`
-       │  3. Forwards to: `${API_UPSTREAM}/api/data`
-       ▼
-[ Backend API (Port 8000) ]
-```
+Containerized Frontend client featuring an **OpenLDAP login interface**, session management, encrypted database interactions, and **Nginx Reverse Proxy** with automatic secret rotation reloading.
 
 ---
 
-## 🚀 How to Run
+## 🛡️ Security Architecture
 
-### 1. Configure Environment (Optional)
-If you wish to customize variables, copy `.env.example` to `.env`:
-```bash
-cp .env.example .env
 ```
-Default values:
-- `API_UPSTREAM=http://host.docker.internal:8000`
-- `API_KEY=my-secret-key`
+[ Browser / Client ]
+       │
+       │  1. POST /api/login  {"username":"alice", "password":"..."}
+       │     GET/POST /api/data (No API key in client request)
+       ▼
+[ Nginx Reverse Proxy (Port 80) ]
+       │
+       │  2. Injects Header: `x-api-key: ${API_SECRET}` (dynamically rotated)
+       │  3. Forwards to: `${API_UPSTREAM}/api/...`
+       ▼
+[ Backend API (Port 8000) ]
+       │
+       ▼
+[ OpenLDAP Directory (Port 389) ]
+```
 
-### 2. Start with Docker Compose
+- **Zero Credentials in Browser**: The browser never sees `API_SECRET` or sensitive internal endpoints.
+- **Dynamic Secret Watcher**: The background watcher in `docker-entrypoint.sh` reloads Nginx dynamically whenever `API_SECRET` rotates, ensuring zero downtime.
+- **OpenLDAP Authentication**: Users authenticate with LDAP accounts (`alice` / `alice123` or `bob` / `bob123`).
+
+---
+
+## 🚀 Running the Frontend
+
 ```bash
 docker compose up -d --build
 ```
 
-### 3. Open in Browser
-Open your browser and navigate to:
-```text
-http://localhost
-```
-
-### 4. Stop the Container
-```bash
-docker compose down
-```
+Access the interface at: `http://localhost`
 
 ---
 
 ## 🧪 Testing Verification
 
-1. **GET Request (`GET /api/data`)**: Click **"Get Protected Data (GET)"** to test data retrieval through the secure reverse proxy.
-2. **POST Request (`POST /api/data`)**: Click **"Send Protected Data (POST)"** to test payload delivery through the secure reverse proxy.
-3. **Inspect Network Tab**: Notice that the browser never sends or receives `x-api-key`. All authentication is handled transparently by Nginx.
+1. **LDAP Login**:
+   - Enter `alice` / `alice123` -> Click **Iniciar Sesión con LDAP**.
+   - Interface transitions to show active user session, LDAP Distinguished Name (`dn`), and full name.
+2. **Protected Data Operations**:
+   - Click **Consultar y Descifrar (GET /api/data)** to read decrypted data from SQLite.
+   - Click **Cifrar y Guardar en BD (POST /api/data)** to encrypt and insert new data into SQLite.
+3. **Secret Rotation Verification**:
+   - When the secret rotation script runs, Nginx automatically reloads with the new `API_SECRET`.
+   - All requests continue working without browser reloads or authentication failure!
+

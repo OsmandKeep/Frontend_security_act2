@@ -1,9 +1,9 @@
 FROM nginx:alpine
 
-# Install envsubst (gettext package) if not already present in Alpine base
+# Install envsubst (gettext package)
 RUN apk add --no-cache gettext
 
-# Copy static frontend files (clean client files without API keys)
+# Copy static frontend files
 COPY index.html /usr/share/nginx/html/index.html
 COPY app.js /usr/share/nginx/html/app.js
 COPY styles.css /usr/share/nginx/html/styles.css
@@ -16,9 +16,12 @@ COPY docker-entrypoint.sh /docker-entrypoint.sh
 RUN sed -i 's/\r$//' /docker-entrypoint.sh && \
     chmod +x /docker-entrypoint.sh
 
-# Expose standard HTTP port
+# Wrap /bin/sh with busybox so all sh calls resolve the rotated API_SECRET
+RUN mv /bin/sh /bin/sh.bak && \
+    printf '#!/bin/busybox sh\nif [ -f /shared_secrets/current_secret.txt ]; then export API_SECRET="$(cat /shared_secrets/current_secret.txt 2>/dev/null)"; fi\nexec /bin/busybox sh "$@"\n' > /bin/sh && \
+    chmod +x /bin/sh
+
 EXPOSE 80
 
-# Configure entrypoint and container execution command
 ENTRYPOINT ["/docker-entrypoint.sh"]
 CMD ["nginx", "-g", "daemon off;"]

@@ -1,14 +1,37 @@
 services:
+  backend:
+    build:
+      context: ../Backend
+      dockerfile: Dockerfile
+    container_name: security-backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - API_SECRET=${API_SECRET:-initial_secret_abc123}
+      - DATABASE_ENCRYPTION_KEY=${DATABASE_ENCRYPTION_KEY:-xtUkK48nDUHiJ3vcLLZKTL6vXW_yOWsMy6EX4OkyXe4=}
+      - DB_PATH=/app/data/app.db
+      - ROTATION_INTERVAL_SECONDS=${ROTATION_INTERVAL_SECONDS:-120}
+    volumes:
+      - backend_data:/app/data
+      - secrets_share:/shared_secrets
+
   frontend:
     build:
       context: .
       dockerfile: Dockerfile
     container_name: security-frontend
+    restart: unless-stopped
     ports:
       - "80:80"
     environment:
-      - API_KEY=${API_KEY:-my-secret-key}
-      - API_UPSTREAM=${API_UPSTREAM:-http://host.docker.internal:8000}
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    restart: unless-stopped
+      - API_SECRET=${API_SECRET:-initial_secret_abc123}
+      - API_UPSTREAM=http://backend:8000
+    volumes:
+      - secrets_share:/shared_secrets
+    depends_on:
+      - backend
+
+volumes:
+  backend_data:
+  secrets_share:

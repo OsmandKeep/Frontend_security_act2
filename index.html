@@ -1,42 +1,124 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Secure Frontend - Nginx Reverse Proxy</title>
+    <title>Portal Seguro - Nginx, LDAP & Base de Datos Cifrada</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <main class="container">
         <header class="header">
-            <h1>Secure Frontend Gateway</h1>
-            <p class="subtitle">Nginx Reverse Proxy &amp; Server-Side Header Injection</p>
+            <div class="header-badge">Ciberseguridad &amp; Gestión de Identidad</div>
+            <h1>Portal Seguro Corporativo</h1>
+            <p class="subtitle">Nginx Reverse Proxy &bull; Autenticación OpenLDAP &bull; Rotación de Secrets</p>
         </header>
 
+        <!-- Architecture status card -->
         <div class="security-card">
             <div class="security-header">
                 <span class="shield-icon">🛡️</span>
-                <h3>Cybersecurity Architecture</h3>
+                <h3>Arquitectura de Seguridad de 3 Servicios</h3>
             </div>
             <ul class="security-details">
-                <li><strong>Client Exposure:</strong> <span class="badge-safe">Zero Keys in Browser</span></li>
-                <li><strong>Proxy Gateway:</strong> <code>Nginx (Port 80)</code></li>
-                <li><strong>Endpoint:</strong> <code>/api/data</code> (Relative path)</li>
-                <li><strong>Authentication:</strong> <code>x-api-key</code> injected server-side via Nginx</li>
+                <li><strong>Frontend (Nginx :80):</strong> <span class="badge-safe">Cero credenciales expuestas al navegador</span></li>
+                <li><strong>Backend (FastAPI :8000):</strong> <code>x-api-key</code> inyectado del lado del servidor + Fernet DB</li>
+                <li><strong>Servicio LDAP (OpenLDAP :389):</strong> Autenticación centralizada <code>dc=example,dc=com</code></li>
+                <li><strong>Rotación de Secrets:</strong> Script externo rota secrets de Frontend, Backend y LDAP</li>
             </ul>
         </div>
 
-        <div class="actions">
-            <button id="btn-get" class="btn btn-primary">Get Protected Data (GET)</button>
-            <button id="btn-post" class="btn btn-secondary">Send Protected Data (POST)</button>
+        <!-- 1. LDAP LOGIN SECTION -->
+        <div id="login-section" class="card login-card">
+            <div class="card-header">
+                <h2>🔐 Inicio de Sesión LDAP</h2>
+                <span class="status-tag info">OpenLDAP Directory</span>
+            </div>
+            <p class="card-desc">Ingresa tus credenciales corporativas almacenadas en el directorio OpenLDAP.</p>
+            
+            <form id="login-form">
+                <div class="form-group">
+                    <label for="username">Usuario LDAP (UID):</label>
+                    <input type="text" id="username" class="form-input" placeholder="Ej. alice o bob" value="alice" required autocomplete="username">
+                </div>
+                <div class="form-group">
+                    <label for="password">Contraseña LDAP:</label>
+                    <input type="password" id="password" class="form-input" placeholder="Contraseña de usuario LDAP" value="alice123" required autocomplete="current-password">
+                </div>
+                <div class="form-actions">
+                    <button type="submit" id="btn-login" class="btn btn-primary">
+                        <span class="btn-icon">🔑</span> Iniciar Sesión con LDAP
+                    </button>
+                    <button type="button" id="btn-quick-fill" class="btn btn-outline" title="Alternar entre alice y bob">
+                        👤 Cambiar a Bob (bob / bob123)
+                    </button>
+                </div>
+            </form>
+            <div class="credentials-hint">
+                💡 <strong>Credenciales de prueba:</strong> <code>alice</code> / <code>alice123</code> &bull; <code>bob</code> / <code>bob123</code>
+            </div>
         </div>
 
+        <!-- 2. AUTHENTICATED SESSION SECTION (Initially hidden) -->
+        <div id="session-section" class="card session-card hidden">
+            <div class="card-header">
+                <h2>👤 Sesión Activa (LDAP)</h2>
+                <span class="status-tag success">Autenticado</span>
+            </div>
+            <div class="user-info-grid">
+                <div class="info-item">
+                    <span class="info-label">Nombre Completo:</span>
+                    <strong id="user-display-name" class="info-value">Alice Smith</strong>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Usuario (UID):</span>
+                    <strong id="user-display-username" class="info-value">alice</strong>
+                </div>
+                <div class="info-item full-width">
+                    <span class="info-label">Distinguished Name (DN):</span>
+                    <code id="user-display-dn" class="info-code">uid=alice,ou=users,dc=example,dc=com</code>
+                </div>
+            </div>
+            <div class="session-actions">
+                <button id="btn-logout" class="btn btn-danger">
+                    <span class="btn-icon">🚪</span> Cerrar Sesión
+                </button>
+            </div>
+        </div>
+
+        <!-- 3. PROTECTED DATA OPERATIONS SECTION -->
+        <div class="card operations-card">
+            <div class="card-header">
+                <h2>📦 Operaciones en Base de Datos Cifrada</h2>
+                <span class="status-tag">Protegido por x-api-key</span>
+            </div>
+            <p class="card-desc">Todas las peticiones pasan a través del proxy reverso de Nginx con inyección del <code>API_SECRET</code> dinámico actual.</p>
+
+            <div class="form-group">
+                <label for="post-message">Mensaje confidencial a cifrar (POST):</label>
+                <input type="text" id="post-message" class="form-input" placeholder="Escribe un mensaje para cifrar con Fernet en SQLite..." value="Datos protegidos por cifrado simétrico y secret rotativo">
+            </div>
+
+            <div class="actions">
+                <button id="btn-get" class="btn btn-primary">
+                    <span class="btn-icon">📥</span> Consultar y Descifrar (GET /api/data)
+                </button>
+                <button id="btn-post" class="btn btn-secondary">
+                    <span class="btn-icon">🔒</span> Cifrar y Guardar en BD (POST /api/data)
+                </button>
+                <button id="btn-status" class="btn btn-outline">
+                    <span class="btn-icon">🔍</span> Estado de Secrets (/api/status)
+                </button>
+            </div>
+        </div>
+
+        <!-- 4. LIVE CONSOLE / RESPONSE BOX -->
         <div class="response-box">
             <div class="response-header">
-                <h2>Response:</h2>
-                <span id="status-tag" class="status-tag">Idle</span>
+                <h2>📡 Respuesta de la API (vía Nginx Reverse Proxy):</h2>
+                <span id="status-tag" class="status-tag">En espera</span>
             </div>
-            <pre id="response-output">Click a button above to execute a request through the Nginx reverse proxy...</pre>
+            <pre id="response-output">Inicia sesión con LDAP o pulsa cualquier botón de operación para interactuar a través del proxy reverso...</pre>
         </div>
     </main>
 
